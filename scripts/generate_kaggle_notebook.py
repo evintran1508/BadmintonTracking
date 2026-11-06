@@ -54,12 +54,12 @@ nb = {
             "metadata": {},
             "outputs": [],
             "source": [
-                "# Cell 3: Giải nén mã nguồn dự án Badminton AI Studio\n",
-                "import base64, io, zipfile\n",
-                f"B64_DATA = '''{b64_zip}'''\n",
-                "with zipfile.ZipFile(io.BytesIO(base64.b64decode(B64_DATA))) as zf:\n",
-                "    zf.extractall('.')\n",
-                "print('✅ Đã giải nén mã nguồn dự án hoàn tất!')"
+                "# Cell 3: Tải mã nguồn mới nhất từ GitHub\n",
+                "!rm -rf BadmintonTracking_repo\n",
+                "!git clone -q https://github.com/evintran1508/BadmintonTracking.git BadmintonTracking_repo\n",
+                "!cp -rf BadmintonTracking_repo/* .\n",
+                "!rm -rf BadmintonTracking_repo\n",
+                "print('✅ Đã cập nhật mã nguồn mới nhất từ GitHub!')"
             ]
         },
         {
