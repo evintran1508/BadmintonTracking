@@ -182,8 +182,10 @@ print(json.dumps({"width": vw, "height": vh, "fps": round(fps, 2), "frames": n, 
         const payload = body ? JSON.parse(body) : {};
         const mode = payload.mode === "singles" ? "singles" : "doubles";
         const uploadedVid = path.join(OUT_DIR, "uploaded_input.mp4");
-        const refVid = path.join(ROOT, "fixtures", "reference", "sample.mp4");
-        const videoToUse = payload.useUploadedVideo && fs.existsSync(uploadedVid) ? uploadedVid : refVid;
+        const refVid = fs.existsSync(path.join(ROOT, "fixtures", "reference", "reference_match.mp4"))
+          ? path.join(ROOT, "fixtures", "reference", "reference_match.mp4")
+          : path.join(ROOT, "fixtures", "clips", "synthetic_dev_02.mp4");
+        const videoToUse = payload.useUploadedVideo && fs.existsSync(uploadedVid) ? uploadedVid : (fs.existsSync(uploadedVid) ? uploadedVid : refVid);
         const autoScript = `
 import json, pathlib, cv2, numpy as np
 from ai_core.court import auto_detect_court_points, calibrate_court
