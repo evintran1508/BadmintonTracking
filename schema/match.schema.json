@@ -1,0 +1,657 @@
+{
+  "$defs": {
+    "CalibPoint": {
+      "properties": {
+        "px": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Px",
+          "type": "array"
+        },
+        "court_m": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Court M",
+          "type": "array"
+        }
+      },
+      "required": [
+        "px",
+        "court_m"
+      ],
+      "title": "CalibPoint",
+      "type": "object"
+    },
+    "CourtDims": {
+      "properties": {
+        "width": {
+          "exclusiveMinimum": 0,
+          "title": "Width",
+          "type": "number"
+        },
+        "length": {
+          "exclusiveMinimum": 0,
+          "title": "Length",
+          "type": "number"
+        },
+        "net_y": {
+          "exclusiveMinimum": 0,
+          "title": "Net Y",
+          "type": "number"
+        }
+      },
+      "required": [
+        "width",
+        "length",
+        "net_y"
+      ],
+      "title": "CourtDims",
+      "type": "object"
+    },
+    "CourtMeta": {
+      "properties": {
+        "mode": {
+          "enum": [
+            "singles",
+            "doubles"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "dims_m": {
+          "$ref": "#/$defs/CourtDims"
+        },
+        "calib_points": {
+          "items": {
+            "$ref": "#/$defs/CalibPoint"
+          },
+          "title": "Calib Points",
+          "type": "array"
+        },
+        "homography_img_to_court": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 9,
+          "minItems": 9,
+          "title": "Homography Img To Court",
+          "type": "array"
+        },
+        "reproj_error_m": {
+          "minimum": 0,
+          "title": "Reproj Error M",
+          "type": "number"
+        }
+      },
+      "required": [
+        "mode",
+        "dims_m",
+        "calib_points",
+        "homography_img_to_court",
+        "reproj_error_m"
+      ],
+      "title": "CourtMeta",
+      "type": "object"
+    },
+    "FrameRecord": {
+      "properties": {
+        "i": {
+          "minimum": 0,
+          "title": "I",
+          "type": "integer"
+        },
+        "t": {
+          "minimum": 0.0,
+          "title": "T",
+          "type": "number"
+        },
+        "shuttle": {
+          "$ref": "#/$defs/ShuttleFrame"
+        },
+        "players": {
+          "additionalProperties": {
+            "$ref": "#/$defs/PlayerFrame"
+          },
+          "title": "Players",
+          "type": "object"
+        }
+      },
+      "required": [
+        "i",
+        "t",
+        "shuttle",
+        "players"
+      ],
+      "title": "FrameRecord",
+      "type": "object"
+    },
+    "PlayerFrame": {
+      "properties": {
+        "bbox_px": {
+          "anyOf": [
+            {
+              "maxItems": 4,
+              "minItems": 4,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bbox Px"
+        },
+        "foot_px": {
+          "anyOf": [
+            {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Foot Px"
+        },
+        "foot_court_m": {
+          "anyOf": [
+            {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Foot Court M"
+        },
+        "speed_mps": {
+          "minimum": 0.0,
+          "title": "Speed Mps",
+          "type": "number"
+        },
+        "dist_cum_m": {
+          "minimum": 0.0,
+          "title": "Dist Cum M",
+          "type": "number"
+        },
+        "energy": {
+          "maximum": 100.0,
+          "minimum": 0.0,
+          "title": "Energy",
+          "type": "number"
+        },
+        "conf": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Conf",
+          "type": "number"
+        }
+      },
+      "required": [
+        "speed_mps",
+        "dist_cum_m",
+        "energy",
+        "conf"
+      ],
+      "title": "PlayerFrame",
+      "type": "object"
+    },
+    "PlayerInfo": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "team": {
+          "enum": [
+            "A",
+            "B"
+          ],
+          "title": "Team",
+          "type": "string"
+        },
+        "color": {
+          "title": "Color",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "team",
+        "color"
+      ],
+      "title": "PlayerInfo",
+      "type": "object"
+    },
+    "PlayerSummary": {
+      "properties": {
+        "total_distance_m": {
+          "minimum": 0.0,
+          "title": "Total Distance M",
+          "type": "number"
+        },
+        "avg_speed_mps": {
+          "minimum": 0.0,
+          "title": "Avg Speed Mps",
+          "type": "number"
+        },
+        "max_speed_mps": {
+          "minimum": 0.0,
+          "title": "Max Speed Mps",
+          "type": "number"
+        },
+        "zones_pct": {
+          "$ref": "#/$defs/ZonesPct"
+        }
+      },
+      "required": [
+        "total_distance_m",
+        "avg_speed_mps",
+        "max_speed_mps",
+        "zones_pct"
+      ],
+      "title": "PlayerSummary",
+      "type": "object"
+    },
+    "Rally": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "integer"
+        },
+        "start_frame": {
+          "minimum": 0,
+          "title": "Start Frame",
+          "type": "integer"
+        },
+        "end_frame": {
+          "minimum": 0,
+          "title": "End Frame",
+          "type": "integer"
+        },
+        "shot_count": {
+          "minimum": 0,
+          "title": "Shot Count",
+          "type": "integer"
+        },
+        "winner_team": {
+          "anyOf": [
+            {
+              "enum": [
+                "A",
+                "B"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Winner Team"
+        },
+        "score_after": {
+          "anyOf": [
+            {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Score After"
+        }
+      },
+      "required": [
+        "id",
+        "start_frame",
+        "end_frame",
+        "shot_count"
+      ],
+      "title": "Rally",
+      "type": "object"
+    },
+    "Shot": {
+      "properties": {
+        "idx": {
+          "minimum": 1,
+          "title": "Idx",
+          "type": "integer"
+        },
+        "rally_id": {
+          "title": "Rally Id",
+          "type": "integer"
+        },
+        "frame": {
+          "minimum": 0,
+          "title": "Frame",
+          "type": "integer"
+        },
+        "player_id": {
+          "title": "Player Id",
+          "type": "string"
+        },
+        "shot_type": {
+          "anyOf": [
+            {
+              "enum": [
+                "Smash",
+                "Clear",
+                "Drop",
+                "Drive",
+                "Serve",
+                "Lift"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Shot Type"
+        },
+        "speed_kmh": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Speed Kmh"
+        },
+        "speed_confidence": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Speed Confidence",
+          "type": "number"
+        },
+        "from_court_m": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "From Court M",
+          "type": "array"
+        },
+        "to_court_m": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "To Court M",
+          "type": "array"
+        }
+      },
+      "required": [
+        "idx",
+        "rally_id",
+        "frame",
+        "player_id",
+        "speed_confidence",
+        "from_court_m",
+        "to_court_m"
+      ],
+      "title": "Shot",
+      "type": "object"
+    },
+    "ShuttleFrame": {
+      "properties": {
+        "x_px": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "X Px"
+        },
+        "y_px": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Y Px"
+        },
+        "visible": {
+          "title": "Visible",
+          "type": "boolean"
+        },
+        "conf": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Conf",
+          "type": "number"
+        }
+      },
+      "required": [
+        "visible",
+        "conf"
+      ],
+      "title": "ShuttleFrame",
+      "type": "object"
+    },
+    "VideoMeta": {
+      "properties": {
+        "fps": {
+          "exclusiveMinimum": 0,
+          "title": "Fps",
+          "type": "number"
+        },
+        "total_frames": {
+          "minimum": 1,
+          "title": "Total Frames",
+          "type": "integer"
+        },
+        "duration_sec": {
+          "exclusiveMinimum": 0,
+          "title": "Duration Sec",
+          "type": "number"
+        },
+        "width": {
+          "exclusiveMinimum": 0,
+          "title": "Width",
+          "type": "integer"
+        },
+        "height": {
+          "exclusiveMinimum": 0,
+          "title": "Height",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "fps",
+        "total_frames",
+        "duration_sec",
+        "width",
+        "height"
+      ],
+      "title": "VideoMeta",
+      "type": "object"
+    },
+    "ZonesPct": {
+      "properties": {
+        "front": {
+          "maximum": 100.0,
+          "minimum": 0.0,
+          "title": "Front",
+          "type": "number"
+        },
+        "mid": {
+          "maximum": 100.0,
+          "minimum": 0.0,
+          "title": "Mid",
+          "type": "number"
+        },
+        "back": {
+          "maximum": 100.0,
+          "minimum": 0.0,
+          "title": "Back",
+          "type": "number"
+        }
+      },
+      "required": [
+        "front",
+        "mid",
+        "back"
+      ],
+      "title": "ZonesPct",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "schema_version": {
+      "const": "2.0",
+      "default": "2.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "match_id": {
+      "title": "Match Id",
+      "type": "string"
+    },
+    "video": {
+      "$ref": "#/$defs/VideoMeta"
+    },
+    "court": {
+      "$ref": "#/$defs/CourtMeta"
+    },
+    "players": {
+      "items": {
+        "$ref": "#/$defs/PlayerInfo"
+      },
+      "title": "Players",
+      "type": "array"
+    },
+    "rallies": {
+      "items": {
+        "$ref": "#/$defs/Rally"
+      },
+      "title": "Rallies",
+      "type": "array"
+    },
+    "shots": {
+      "items": {
+        "$ref": "#/$defs/Shot"
+      },
+      "title": "Shots",
+      "type": "array"
+    },
+    "frames": {
+      "items": {
+        "$ref": "#/$defs/FrameRecord"
+      },
+      "title": "Frames",
+      "type": "array"
+    },
+    "summary": {
+      "additionalProperties": {
+        "$ref": "#/$defs/PlayerSummary"
+      },
+      "title": "Summary",
+      "type": "object"
+    }
+  },
+  "required": [
+    "match_id",
+    "video",
+    "court",
+    "players",
+    "rallies",
+    "shots",
+    "frames",
+    "summary"
+  ],
+  "title": "MatchDocument",
+  "type": "object"
+}

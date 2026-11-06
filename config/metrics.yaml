@@ -1,0 +1,26 @@
+court:
+  doubles_width_m: 6.1
+  singles_width_m: 5.18
+  length_m: 13.4
+  net_y_m: 6.7
+  zones_from_net_m:
+    front_max: 1.98
+    mid_max: 4.72
+    back_max: 6.70
+
+energy:
+  initial: 100
+  min: 0
+  max: 100
+  dist_decay_per_m: 1.2
+  shot_decay: 0.8
+
+hud:
+  foot_ring_radius_m: 0.45
+  shuttle_trail_frames: 8
+  court_trail_seconds: 3.0
+
+performance:
+  max_processing_ratio_gpu: 2.0
+  max_processing_ratio_cpu: 8.0
+

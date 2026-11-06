@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+node_modules/
+.next/
+out/
+weights/
+tools/
+*.mp4
+!fixtures/clips/*.mp4
+!fixtures/synthetic_walk_test.mp4
+!fixtures/real_walk_test.mp4
+!fixtures/reference/*.mp4

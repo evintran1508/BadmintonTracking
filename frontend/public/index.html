@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>CourtVision — Badminton HUD & Scoreboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <style>
+    :root {
+      --bg-base: #090b10;
+      --bg-surface: #11141d;
+      --bg-elevated: #171b26;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(56, 189, 248, 0.45);
+      --cyan: #38bdf8;
+      --emerald: #34d399;
+      --gold: #facc15;
+      --rose: #f43f5e;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-num: "Barlow Condensed", "Bahnschrift", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-ui);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app-shell {
+      display: flex;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Main Video Stage */
+    .arena-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 16px;
+      gap: 10px;
+      min-width: 0;
+      position: relative;
+    }
+
+    .stage-wrap {
+      flex: 1;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 0;
+      position: relative;
+    }
+
+    .stage {
+      position: relative;
+      background: #000;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: fill;
+      background: #000;
+    }
+
+    canvas#hud-canvas,
+    canvas#calib-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    canvas#hud-canvas {
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    canvas#calib-canvas {
+      display: none;
+      z-index: 15;
+      cursor: crosshair;
+    }
+
+    .calib-banner {
+      display: none;
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(9, 11, 16, 0.9);
+      border: 1px solid var(--border-focus);
+      color: var(--text-main);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 500;
+      z-index: 22;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    /* Minimalist Bottom Controls Bar */
+    .controls-bar {
+      width: 100%;
+      max-width: 960px;
+      background: rgba(17, 20, 29, 0.92);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 30;
+    }
+
+    .transport-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn {
+      background: var(--bg-elevated);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-family: var(--font-ui);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s, color 0.12s;
+      white-space: nowrap;
+    }
+
+    .btn:hover:not(:disabled) {
+      background: #222838;
+      border-color: rgba(255, 255, 255, 0.22);
+    }
+
+    .btn.primary {
+      background: var(--cyan);
+      border-color: var(--cyan);
+      color: #06101e;
+      font-weight: 600;
+    }
+
+    .btn.primary:hover:not(:disabled) {
+      background: #7dd3fc;
+    }
+
+    .btn.primary:disabled {
+      background: #1e2433;
+      border-color: transparent;
+      color: #475569;
+      cursor: not-allowed;
+    }
+
+    .btn.active {
+      background: rgba(56, 189, 248, 0.14);
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+
+    .btn.icon-btn {
+      padding: 5px 8px;
+      font-size: 11px;
+    }
+
+    /* Smooth Scrubber Slider */
+    #timeline-slider {
+      flex: 1;
+      accent-color: var(--cyan);
+      cursor: pointer;
+      height: 5px;
+      min-width: 60px;
+    }
+
+    .audio-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    #volume-slider {
+      width: 52px;
+      accent-color: var(--cyan);
+      cursor: pointer;
+      height: 4px;
+    }
+
+    #debug-frame {
+      font-family: var(--font-num);
+      font-size: 14px;
+      letter-spacing: 0.3px;
+      color: var(--text-muted);
+      min-width: 108px;
+      text-align: right;
+    }
+
+    /* Score Capsule & Layer Row */
+    .layers-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 11px;
+    }
+
+    .score-capsule {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 2px 6px;
+    }
+
+    .score-val {
+      font-family: var(--font-num);
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      padding: 0 5px;
+      letter-spacing: 0.5px;
+    }
+
+    .score-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .score-btn.team-a {
+      color: var(--cyan);
+      border-color: rgba(56, 189, 248, 0.35);
+    }
+
+    .score-btn.team-b {
+      color: var(--gold);
+      border-color: rgba(250, 204, 21, 0.35);
+    }
+
+    .score-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .toggles {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .toggles label {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      color: var(--text-muted);
+      user-select: none;
+    }
+
+    .toggles input[type="checkbox"] {
+      accent-color: var(--cyan);
+    }
+
+    .mobile-tabs {
+      display: none;
+      gap: 4px;
+    }
+
+    /* Minimalist Right Dock */
+    .studio-dock {
+      width: 360px;
+      background: var(--bg-surface);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      z-index: 35;
+    }
+
+    .dock-header {
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .brand-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand-title h1 {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+      color: var(--text-main);
+    }
+
+    .badge-live {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.12);
+      color: var(--cyan);
+    }
+
+    .dock-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .dock-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .card {
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 11px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .card-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .upload-dropzone {
+      border: 1px dashed rgba(255, 255, 255, 0.2);
+      background: var(--bg-surface);
+      border-radius: 6px;
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .upload-dropzone:hover {
+      border-color: var(--cyan);
+    }
+
+    .progress-track {
+      height: 4px;
+      background: var(--bg-elevated);
+      border-radius: 999px;
+      overflow: hidden;
+      display: none;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--cyan);
+      transition: width 0.2s ease;
+    }
+
+    .field-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    select,
+    input[type="text"] {
+      background: var(--bg-surface);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 4px 8px;
+      font-family: var(--font-ui);
+      font-size: 12px;
+    }
+
+    .player-edit-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .player-edit-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+    }
+
+    .color-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Minimalist Scoreboard Card inside Dock */
+    .score-board-grid {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      text-align: center;
+    }
+
+    .score-big {
+      font-family: var(--font-num);
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .score-history {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      max-height: 54px;
+      overflow-y: auto;
+    }
+
+    /* Analytics & Scouting UI */
+    .best-shot-banner {
+      background: linear-gradient(135deg, rgba(250, 204, 21, 0.14), rgba(56, 189, 248, 0.08));
+      border: 1px solid rgba(250, 204, 21, 0.4);
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .best-shot-speed {
+      font-family: var(--font-num);
+      font-size: 30px;
+      font-weight: 800;
+      color: var(--gold);
+      line-height: 1;
+    }
+
+    .scouting-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 9px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 7px;
+    }
+
+    .scouting-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .style-badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.14);
+      color: var(--cyan);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .scouting-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      text-align: center;
+      background: var(--bg-base);
+      border-radius: 5px;
+      padding: 5px 4px;
+    }
+
+    .stat-cell-val {
+      font-family: var(--font-num);
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .stat-cell-lbl {
+      font-size: 9.5px;
+      color: var(--text-muted);
+    }
+
+    .zone-bar {
+      height: 6px;
+      border-radius: 999px;
+      overflow: hidden;
+      display: flex;
+      background: var(--bg-base);
+    }
+
+    .shot-badge {
+      display: inline-block;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 9.5px;
+      font-weight: 600;
+      margin-left: 4px;
+    }
+
+    /* Responsive Mobile Mode (< 900px, including 390x844 Playwright tests) */
+    @media (max-width: 899px) {
+      .arena-pane {
+        padding: 0;
+        gap: 0;
+      }
+
+      .stage {
+        width: 390px !important;
+        height: 844px !important;
+        border: none;
+        border-radius: 0;
+      }
+
+      .controls-bar {
+        position: absolute;
+        bottom: 4px;
+        left: 6px;
+        right: 6px;
+        padding: 5px 7px;
+        gap: 4px;
+      }
+
+      #volume-slider,
+      .seek-step-btn {
+        display: none;
+      }
+
+      .mobile-tabs {
+        display: flex;
+      }
+
+      .studio-dock {
+        display: none;
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        right: 8px;
+        width: auto;
+        height: auto;
+        max-height: 720px;
+        border: 1px solid var(--border-focus);
+        border-radius: 10px;
+      }
+
+      .studio-dock.mobile-open {
+        display: flex;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <!-- CENTER VIDEO & BROADCAST HUD ARENA -->
+    <main class="arena-pane">
+      <div class="stage-wrap" id="stage-wrap">
+        <div class="stage" id="stage" style="width:390px; height:844px;">
+          <video id="match-video" src="/mock_video.webm" muted playsinline preload="auto"></video>
+          <canvas id="hud-canvas" width="480" height="1040"></canvas>
+          <canvas id="calib-canvas" width="480" height="1040"></canvas>
+          <div class="calib-banner" id="calib-banner">
+            Kéo thả 6 điểm sân (P1–P6) khớp vạch sân trên video
+          </div>
+        </div>
+      </div>
+
+      <div class="controls-bar">
+        <div class="transport-row">
+          <button class="btn primary" id="btn-play-pause" type="button">▶ Phát</button>
+          <button class="btn icon-btn seek-step-btn" id="btn-seek-back" type="button" title="Lùi 3 giây">-3s</button>
+          <input type="range" id="timeline-slider" min="0" max="449" step="1" value="0" title="Kéo trượt tua video" />
+          <button class="btn icon-btn seek-step-btn" id="btn-seek-fwd" type="button" title="Tua 3 giây">+3s</button>
+          <div class="audio-group">
+            <button class="btn icon-btn" id="btn-mute" type="button" title="Bật/Tắt âm thanh">🔇</button>
+            <input type="range" id="volume-slider" min="0" max="100" value="80" title="Âm lượng" />
+          </div>
+          <button class="btn icon-btn" id="btn-speed" type="button" title="Tốc độ phát">1.0x</button>
+          <span id="debug-frame">frame_idx: 0 (0.00s)</span>
+        </div>
+
+        <div class="layers-row">
+          <div class="mobile-tabs">
+            <button class="btn active" id="nav-hud" type="button">HUD</button>
+            <button class="btn" id="nav-setup" type="button">Định Hình</button>
+            <button class="btn" id="nav-summary" type="button">Thống Kê</button>
+          </div>
+
+          <!-- Quick Minimalist Match Score Capsule -->
+          <div class="score-capsule" title="Tính điểm trực tiếp (Phím tắt: A / B / Z)">
+            <button class="score-btn team-a" id="btn-score-a" type="button">+A</button>
+            <span class="score-val" id="score-display">0 - 0</span>
+            <button class="score-btn team-b" id="btn-score-b" type="button">+B</button>
+            <button class="score-btn" id="btn-score-undo" type="button" title="Hoàn tác điểm vừa chấm">↺</button>
+            <button class="score-btn" id="btn-score-reset" type="button" title="Đặt lại tỉ số 0-0">⟲</button>
+          </div>
+
+          <div class="toggles" id="layer-toggles">
+            <label><input type="checkbox" data-layer="topBar" checked />Tỉ số</label>
+            <label><input type="checkbox" data-layer="footRings" checked />Vòng chân</label>
+            <label><input type="checkbox" data-layer="playerTags" checked />Thẻ tên</label>
+            <label><input type="checkbox" data-layer="lockOn" checked />Lock-On</label>
+            <label><input type="checkbox" data-layer="moveTable" checked />MOVE</label>
+            <label><input type="checkbox" data-layer="courtMap" checked />Sân 2D</label>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- RIGHT MINIMALIST STUDIO DOCK -->
+    <aside class="studio-dock" id="studio-dock">
+      <div class="dock-header">
+        <div class="brand-title">
+          <h1>CourtVision Studio</h1>
+          <span class="badge-live" id="mode-pill">HUD LIVE</span>
+        </div>
+        <div class="dock-tabs">
+          <button class="btn active" id="tab-btn-setup" type="button">Thiết Lập & Sân</button>
+          <button class="btn" id="tab-btn-summary" type="button">Điểm & Thống Kê</button>
+        </div>
+      </div>
+
+      <div class="dock-body">
+        <!-- ALWAYS-VISIBLE MINIMALIST SCOREBOARD & AUDIO CARD -->
+        <div class="card">
+          <div class="card-title">
+            <span>Bảng điểm trận đấu (BWF 21)</span>
+            <span id="set-display" style="font-size:11px; color:var(--cyan);">Set: 0 - 0</span>
+          </div>
+          <div class="score-board-grid">
+            <div>
+              <div style="font-size:11px; color:var(--cyan); font-weight:600;">ĐỘI A (Gần)</div>
+              <div class="score-big" id="dock-score-a" style="color:var(--cyan);">0</div>
+              <button class="btn" id="btn-dock-score-a" type="button" style="margin-top:4px; width:100%;">+1 Điểm A</button>
+            </div>
+            <div style="color:var(--text-muted); font-size:11px;">VS</div>
+            <div>
+              <div style="font-size:11px; color:var(--gold); font-weight:600;">ĐỘI B (Xa)</div>
+              <div class="score-big" id="dock-score-b" style="color:var(--gold);">0</div>
+              <button class="btn" id="btn-dock-score-b" type="button" style="margin-top:4px; width:100%;">+1 Điểm B</button>
+            </div>
+          </div>
+          <div class="field-row">
+            <label style="display:inline-flex; align-items:center; gap:5px; cursor:pointer; color:var(--text-main);">
+              <input type="checkbox" id="chk-sfx" checked style="accent-color:var(--cyan);" />
+              Âm thanh tiếng cầu & báo điểm
+            </label>
+            <span id="audio-state-label" style="font-size:11px;">Đang tắt tiếng</span>
+          </div>
+          <div class="score-history" id="score-history-list"></div>
+        </div>
+
+        <!-- SETUP & ON-VIDEO CALIBRATION PANEL -->
+        <section id="setup-panel" style="display:flex; flex-direction:column; gap:10px;">
+          <div class="card">
+            <div class="card-title">
+              <span>1. Video trận đấu</span>
+              <span style="font-size:11px; color:var(--text-muted);">MP4 / MOV</span>
+            </div>
+            <label class="upload-dropzone" for="video-file-input">
+              <span style="font-weight:600; color:var(--cyan); font-size:12px;">Chọn video từ máy</span>
+              <span style="font-size:11px; color:var(--text-muted);">Hỗ trợ kéo trượt tua & giữ nguyên âm thanh gốc</span>
+              <input type="file" id="video-file-input" accept="video/mp4,video/quicktime,video/webm"
+                style="display:none;" />
+            </label>
+            <div class="progress-track" id="upload-progress-track">
+              <div class="progress-fill" id="upload-progress-fill"></div>
+            </div>
+            <div id="upload-status" style="font-size:11px; color:var(--text-muted);">
+              Đang mở clip mẫu.
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              <span>2. Định hình mặt sân (6 điểm)</span>
+              <button class="btn" id="btn-toggle-calib" type="button" style="padding:3px 8px; font-size:11px;">Hiện lưới sân</button>
+            </div>
+            <div class="field-row">
+              <span>Chế độ:</span>
+              <select id="court-mode">
+                <option value="doubles" selected>Đánh đôi (6.1m × 13.4m)</option>
+                <option value="singles">Đánh đơn (5.18m × 13.4m)</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <button class="btn primary" id="btn-auto-ai-setup" type="button" style="flex:1.3;">⚡ Tự động Canh Sân & Người</button>
+              <button class="btn" id="btn-auto-calib" type="button" style="flex:0.9;">Khung chuẩn</button>
+              <button class="btn" id="btn-clear-calib" type="button" style="flex:0.7;">Xóa</button>
+            </div>
+            <div id="calib-status" style="font-size:11px; color:var(--text-muted);">
+              Điểm: 0/6 | Kéo P1–P6 khớp 4 góc sân & 2 cọc lưới.
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              <span>3. Người chơi & Phân tích AI</span>
+              <span id="assign-status" style="font-size:11px; color:var(--gold);">Đã gán: 0 người chơi</span>
+            </div>
+            <div class="player-edit-list" id="player-edit-list"></div>
+            <div class="field-row">
+              <span>Thời lượng AI:</span>
+              <select id="max-frames-select">
+                <option value="180">6 giây đầu (Test nhanh ~15s)</option>
+                <option value="300" selected>10 giây đầu (Khuyên dùng ~30s)</option>
+                <option value="450">15 giây đầu (~45s)</option>
+                <option value="900">30 giây đầu (~1.5 phút)</option>
+                <option value="1800">1 phút (~3 phút)</option>
+                <option value="4500">3 phút (~8 phút)</option>
+                <option value="0">Toàn bộ video (~35 phút trên CPU)</option>
+              </select>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn primary" id="btn-process" disabled style="flex:1; padding:9px; font-size:12px;">
+                Phân Tích & Phủ HUD
+              </button>
+              <button class="btn" id="btn-cancel-process" style="display:none; padding:9px 12px; font-size:12px; color:var(--rose); border-color:rgba(244,63,94,0.4);">
+                Hủy
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- SUMMARY, HEATMAP & SHOTS PANEL -->
+        <section id="summary-panel" style="display:none; flex-direction:column; gap:10px;">
+          <div class="card" id="best-shot-card-wrap">
+            <div class="card-title">
+              <span>🔥 Cú đánh tốc độ tốt nhất</span>
+              <span id="rally-summary-badge" style="font-size:10.5px; color:var(--gold); font-weight:600;">Tự động chấm điểm</span>
+            </div>
+            <div id="best-shot-card"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              <span>Phân tích lối chơi & Phong độ</span>
+              <button class="btn" id="btn-delete-data"
+                style="color:var(--rose); border-color:rgba(244,63,94,0.35); font-size:11px; padding:3px 8px;">Xóa dữ liệu</button>
+            </div>
+            <div id="summary-players" style="font-size:11px;"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              <span>Bản đồ nhiệt & Chi tiết cú chạm cầu</span>
+              <span id="shots-count-badge" style="font-size:11px; color:var(--cyan);">0 cú chạm</span>
+            </div>
+            <div style="display:flex; gap:10px; align-items:flex-start;">
+              <canvas id="heatmap-canvas" width="110" height="220"
+                style="border:1px solid var(--border); border-radius:6px;"></canvas>
+              <div style="flex:1; min-width:0;">
+                <div id="shots-list"
+                  style="max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:4px;"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </aside>
+  </div>
+  <script type="module" src="/app.js"></script>
+</body>
+
+</html>
