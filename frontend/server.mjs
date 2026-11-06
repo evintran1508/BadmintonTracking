@@ -393,6 +393,6 @@ print(json.dumps({"ok": True, "calib_points": auto_c["calib_points"], "fallback_
   return serveFile(req, res, path.join(PUBLIC_DIR, rel));
 });
 
-server.listen(PORT, "127.0.0.1", () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log(`Badminton AI Studio running on http://127.0.0.1:${PORT}`);
 });
